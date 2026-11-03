@@ -1,6 +1,9 @@
 import re
 import logging
+import os
 import openpyxl
+from flask import Flask
+from threading import Thread
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -16,6 +19,17 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
+# Dummy web server to satisfy Render's port binding requirement
+app_flask = Flask('')
+
+@app_flask.route('/')
+def home():
+    return "Bot is active!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app_flask.run(host='0.0.0.0', port=port)
 
 # Conversation States
 GET_COOKIES, GET_PASSWORD = range(2)
@@ -123,6 +137,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 def main():
+    # Start Flask server in a background thread to satisfy Render port binding
+    t = Thread(target=run_flask)
+    t.start()
+
     TOKEN = "9149922182:AAHy8DbsIKNS04ng9niIrIjd2gPn7pTZ2Rc"
 
     app = ApplicationBuilder().token(TOKEN).build()
